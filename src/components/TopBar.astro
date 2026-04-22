@@ -1,0 +1,109 @@
+---
+import NavLinks from "./NavLinks.astro";
+import ThemeToggleButton from "./ThemeToggleButton.astro";
+import { NAV_ROUTES, withBase } from "../lib/routes";
+
+function isActiveNavRoute(
+  currentPath: string,
+  href: string,
+  route: (typeof NAV_ROUTES)[number]["route"],
+): boolean {
+  if (route === "/") {
+    if (href === "/") {
+      return currentPath === "/";
+    }
+
+    return currentPath === href || currentPath === `${href}/`;
+  }
+
+  const routePrefix = href.endsWith("/") ? href : `${href}/`;
+
+  return currentPath === href || currentPath.startsWith(routePrefix);
+}
+
+const { pathname } = Astro.url;
+const containerClass = "max-w-6xl mx-auto px-5";
+const baseUrl = import.meta.env.BASE_URL;
+const navLinks = NAV_ROUTES.map(({ route, label }) => {
+  const href = withBase(route, baseUrl);
+
+  return {
+    href,
+    label,
+    isActive: isActiveNavRoute(pathname, href, route),
+  };
+});
+const maxLabelChars = Math.max(...navLinks.map((link) => link.label.length));
+const navWidth = maxLabelChars - 1.35;
+const activeLinkClass =
+  "text-fg-primary font-bold sm:after:content-[''] sm:after:absolute sm:after:left-[-6px] sm:after:right-[-6px] sm:after:top-full sm:after:mt-2 sm:after:block sm:after:h-[2px] sm:after:rounded-full sm:after:bg-accent-primary";
+const inactiveLinkClass = "text-fg-secondary hover:text-fg-primary font-normal";
+const baseLinkClass =
+  "relative inline-block transition-colors min-w-[calc(var(--nav-item-ch)*1ch)] text-center";
+const themeToggleClass =
+  "p-2 w-24 rounded-md border border-border-default hover:bg-surface-hover transition-colors shadow-sm flex items-center gap-2 text-sm justify-center bg-surface-panel text-fg-primary";
+---
+
+<header class="bg-surface-page">
+  <div class={containerClass}>
+    <div class="py-3">
+      <div class="flex items-center justify-between sm:hidden">
+        <button
+          class="p-2 rounded-md border border-border-default bg-surface-panel text-fg-primary shadow-sm hover:bg-surface-hover transition-colors"
+          type="button"
+          aria-controls="mobile-nav"
+          aria-expanded="false"
+          data-mobile-nav-toggle
+        >
+          <span class="sr-only">Open menu</span>
+          <svg
+            viewBox="0 0 24 24"
+            class="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <ThemeToggleButton className={themeToggleClass} />
+      </div>
+
+      <div class="hidden sm:flex sm:items-center sm:justify-between">
+        <NavLinks
+          links={navLinks}
+          navWidth={navWidth}
+          baseLinkClass={baseLinkClass}
+          activeLinkClass={activeLinkClass}
+          inactiveLinkClass={inactiveLinkClass}
+        />
+        <ThemeToggleButton className={themeToggleClass} />
+      </div>
+
+      <nav
+        id="mobile-nav"
+        class="sm:hidden mt-3 pt-3 text-sm tracking-wide overflow-hidden transition-all duration-200 ease-out max-h-0 opacity-0 -translate-y-1 pointer-events-none"
+        style={`--nav-item-ch:${navWidth}`}
+        data-mobile-nav
+      >
+        <NavLinks
+          mobile
+          links={navLinks}
+          navWidth={navWidth}
+          baseLinkClass={baseLinkClass}
+          activeLinkClass={activeLinkClass}
+          inactiveLinkClass={inactiveLinkClass}
+        />
+      </nav>
+    </div>
+  </div>
+</header>
+
+<script>
+  import "../scripts/top-bar";
+</script>

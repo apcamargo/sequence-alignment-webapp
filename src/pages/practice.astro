@@ -1,0 +1,16 @@
+---
+import InteractiveSplitLayout from "../components/InteractiveSplitLayout.astro";
+import PracticeControlsIsland from "../components/PracticeControlsIsland";
+import PracticeResultsIsland from "../components/PracticeResultsIsland";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Alignment practice"
+  subtitle="Fill in the dynamic programming matrix"
+>
+  <InteractiveSplitLayout>
+    <PracticeControlsIsland slot="controls" client:load />
+    <PracticeResultsIsland client:idle={{ timeout: 500 }} />
+  </InteractiveSplitLayout>
+</BaseLayout>

@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@theme {
+  --color-flexoki-paper: #fffcf0;
+  --color-flexoki-black: #100f0f;
+
+  --color-flexoki-50: #f2f0e5;
+  --color-flexoki-100: #e6e4d9;
+  --color-flexoki-150: #dad8ce;
+  --color-flexoki-200: #cecdc3;
+  --color-flexoki-300: #b7b5ac;
+  --color-flexoki-400: #9f9d96;
+  --color-flexoki-500: #878580;
+  --color-flexoki-600: #6f6e69;
+  --color-flexoki-700: #575653;
+  --color-flexoki-800: #403e3c;
+  --color-flexoki-850: #343331;
+  --color-flexoki-900: #282726;
+  --color-flexoki-950: #1c1b1a;
+
+  --color-flexoki-red-light: #d55044;
+  --color-flexoki-orange-light: #da702c;
+  --color-flexoki-yellow-light: #d0a215;
+  --color-flexoki-green-light: #879a39;
+  --color-flexoki-cyan-light: #3aa99f;
+  --color-flexoki-blue-light: #4385be;
+  --color-flexoki-purple-light: #8b7ec8;
+  --color-flexoki-magenta-light: #ce5d97;
+
+  --color-flexoki-red-dark: #ab2c26;
+  --color-flexoki-orange-dark: #bc5215;
+  --color-flexoki-yellow-dark: #ad8301;
+  --color-flexoki-green-dark: #66800b;
+  --color-flexoki-cyan-dark: #24837b;
+  --color-flexoki-blue-dark: #205ea6;
+  --color-flexoki-purple-dark: #5e409d;
+  --color-flexoki-magenta-dark: #a02f6f;
+
+  /* Semantic theme utilities */
+  --color-surface-page: var(--surface-page);
+  --color-surface-panel: var(--surface-panel);
+  --color-surface-hover: var(--surface-hover);
+
+  --color-fg-primary: var(--fg-primary);
+  --color-fg-secondary: var(--fg-secondary);
+
+  --color-border-default: var(--border-default);
+
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+
+  --color-status-success: var(--status-success);
+  --color-status-error: var(--status-error);
+
+  --color-viz-grid: var(--viz-grid);
+  --color-viz-label: var(--viz-label);
+  --color-viz-score: var(--viz-score);
+  --color-viz-score-muted: var(--viz-score-muted);
+  --color-viz-path: var(--viz-path);
+  --color-viz-path-muted: var(--viz-path-muted);
+  --color-viz-path-fill: var(--viz-path-fill);
+  --color-viz-success: var(--viz-success);
+  --color-viz-error: var(--viz-error);
+
+  --spacing-field: 40px;
+}
+
+@layer base {
+  :root {
+    --surface-page: var(--color-flexoki-paper);
+    --surface-panel: var(--color-flexoki-paper);
+    --surface-hover: var(--color-flexoki-100);
+
+    --fg-primary: var(--color-flexoki-950);
+    --fg-secondary: var(--color-flexoki-500);
+
+    --border-default: var(--color-flexoki-400);
+
+    --accent-primary: var(--color-flexoki-red-light);
+    --accent-hover: var(--color-flexoki-red-dark);
+
+    --status-success: var(--color-flexoki-blue-light);
+    --status-error: var(--color-flexoki-red-light);
+
+    --viz-grid: var(--color-flexoki-400);
+    --viz-label: var(--color-flexoki-950);
+    --viz-score: var(--color-flexoki-950);
+    --viz-score-muted: var(--color-flexoki-600);
+    --viz-path: var(--color-flexoki-700);
+    --viz-path-muted: var(--color-flexoki-600);
+    --viz-path-fill: var(--color-flexoki-400);
+    --viz-success: var(--status-success);
+    --viz-error: var(--status-error);
+  }
+
+  :root.dark {
+    --surface-page: var(--color-flexoki-black);
+    --surface-panel: var(--color-flexoki-950);
+    --surface-hover: var(--color-flexoki-800);
+
+    --fg-primary: var(--color-flexoki-paper);
+    --fg-secondary: var(--color-flexoki-600);
+
+    --border-default: var(--color-flexoki-600);
+
+    --accent-primary: var(--color-flexoki-red-light);
+    --accent-hover: var(--color-flexoki-red-dark);
+
+    --status-success: var(--color-flexoki-blue-light);
+    --status-error: var(--color-flexoki-red-light);
+
+    --viz-grid: var(--color-flexoki-600);
+    --viz-label: var(--color-flexoki-paper);
+    --viz-score: var(--color-flexoki-paper);
+    --viz-score-muted: var(--color-flexoki-500);
+    --viz-path: var(--color-flexoki-400);
+    --viz-path-muted: var(--color-flexoki-600);
+    --viz-path-fill: var(--color-flexoki-500);
+    --viz-success: var(--status-success);
+    --viz-error: var(--status-error);
+  }
+
+  body {
+    background-color: var(--surface-page);
+    color: var(--fg-primary);
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  ::selection {
+    background-color: var(--color-flexoki-150);
+    color: var(--fg-primary);
+  }
+
+  .dark ::selection {
+    background-color: var(--color-flexoki-850);
+    color: var(--fg-primary);
+  }
+
+  /* Hide number input spinners */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+}

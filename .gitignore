@@ -1,0 +1,15 @@
+.DS_Store
+
+node_modules/
+dist/
+.astro/
+
+plugin/target/
+plugin/pkg/
+
+src/wasm/*
+
+.env
+.env.production
+.idea/
+.vscode/

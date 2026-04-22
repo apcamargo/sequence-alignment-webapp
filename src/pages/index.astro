@@ -1,0 +1,16 @@
+---
+import AlignmentControlsIsland from "../components/AlignmentControlsIsland";
+import AlignmentResultsIsland from "../components/AlignmentResultsIsland";
+import InteractiveSplitLayout from "../components/InteractiveSplitLayout.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Sequence alignment"
+  subtitle="Global & local pairwise alignment"
+>
+  <InteractiveSplitLayout>
+    <AlignmentControlsIsland slot="controls" client:load />
+    <AlignmentResultsIsland client:idle={{ timeout: 500 }} />
+  </InteractiveSplitLayout>
+</BaseLayout>

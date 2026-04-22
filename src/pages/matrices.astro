@@ -1,0 +1,17 @@
+---
+import MatrixControlsIsland from "../components/MatrixControlsIsland";
+import MatrixHeatmapIsland from "../components/MatrixHeatmapIsland";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Scoring matrices"
+  subtitle="Browse built-in substitution matrices"
+>
+  <div class="w-full">
+    <div class="flex flex-col gap-4">
+      <MatrixControlsIsland client:load />
+      <MatrixHeatmapIsland client:idle={{ timeout: 500 }} />
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,152 @@
+---
+import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
+import TopBar from "../components/TopBar.astro";
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+}
+
+const { title, subtitle } = Astro.props;
+
+const containerClass = "max-w-6xl mx-auto px-5";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    {title && <title>{title}</title>}
+    <script is:inline>
+      (() => {
+        const existingThemeController = window.themeController;
+
+        if (
+          existingThemeController &&
+          typeof existingThemeController.applyTheme === "function"
+        ) {
+          existingThemeController.applyTheme();
+          return;
+        }
+
+        const themePreferences = ["system", "light", "dark"];
+        const themeStorageKey = "sequence-alignment-webapp:theme-preference";
+        const mediaQuery =
+          typeof window.matchMedia === "function"
+            ? window.matchMedia("(prefers-color-scheme: dark)")
+            : null;
+
+        const normalizePreference = (value) =>
+          themePreferences.includes(value) ? value : "system";
+
+        const readStoredPreference = () => {
+          try {
+            return normalizePreference(
+              window.localStorage.getItem(themeStorageKey),
+            );
+          } catch {
+            return "system";
+          }
+        };
+
+        const writeStoredPreference = (preference) => {
+          try {
+            window.localStorage.setItem(themeStorageKey, preference);
+          } catch {
+            // Ignore unavailable storage and keep the in-memory preference.
+          }
+        };
+        let currentPreference = readStoredPreference();
+
+        const resolveTheme = (preference) => {
+          if (preference === "light" || preference === "dark") {
+            return preference;
+          }
+
+          return mediaQuery?.matches ? "dark" : "light";
+        };
+
+        const applyTheme = (preferenceInput) => {
+          const preference = normalizePreference(
+            preferenceInput ?? currentPreference,
+          );
+          const theme = resolveTheme(preference);
+          const root = document.documentElement;
+
+          currentPreference = preference;
+          root.classList.toggle("dark", theme === "dark");
+          root.style.colorScheme = theme;
+        };
+
+        const setPreference = (preferenceInput) => {
+          const preference = normalizePreference(preferenceInput);
+          writeStoredPreference(preference);
+
+          applyTheme(preference);
+        };
+        const getPreference = () => currentPreference;
+
+        window.themeController = {
+          applyTheme,
+          getPreference,
+          getNextPreference(currentPreference) {
+            const preference = normalizePreference(currentPreference);
+            const currentIndex = themePreferences.indexOf(preference);
+
+            return themePreferences[
+              (currentIndex + 1) % themePreferences.length
+            ];
+          },
+          setPreference,
+        };
+
+        const handleSystemThemeChange = () => {
+          if (getPreference() === "system") {
+            applyTheme("system");
+          }
+        };
+
+        document.addEventListener("astro:after-swap", () => {
+          applyTheme();
+        });
+
+        applyTheme();
+
+        if (mediaQuery) {
+          if (typeof mediaQuery.addEventListener === "function") {
+            mediaQuery.addEventListener("change", handleSystemThemeChange);
+          } else {
+            const addLegacyListener = Reflect.get(mediaQuery, "addListener");
+
+            if (typeof addLegacyListener === "function") {
+              addLegacyListener.call(mediaQuery, handleSystemThemeChange);
+            }
+          }
+        }
+      })();
+    </script>
+    <ClientRouter fallback="animate" />
+    <script>
+      import "../scripts/view-transition-page-state";
+    </script>
+  </head>
+  <body class="transition-colors">
+    <TopBar />
+    <main class:list={[containerClass, "py-10"]}>
+      {
+        title && (
+          <header class="mb-10">
+            <div>
+              <h1 class="text-4xl font-black text-fg-primary mb-2">{title}</h1>
+              {subtitle && <p class="text-lg text-fg-secondary">{subtitle}</p>}
+            </div>
+          </header>
+        )
+      }
+      <slot />
+    </main>
+  </body>
+</html>

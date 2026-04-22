@@ -1,0 +1,48 @@
+---
+interface NavLink {
+  href: string;
+  label: string;
+  isActive: boolean;
+}
+
+interface Props {
+  links: NavLink[];
+  navWidth: number;
+  baseLinkClass: string;
+  activeLinkClass: string;
+  inactiveLinkClass: string;
+  mobile?: boolean;
+}
+
+const {
+  links,
+  navWidth,
+  baseLinkClass,
+  activeLinkClass,
+  inactiveLinkClass,
+  mobile = false,
+} = Astro.props;
+const Tag = mobile ? "div" : "nav";
+const className = mobile
+  ? "flex flex-col gap-3"
+  : "flex flex-wrap items-center gap-6 text-sm tracking-wide";
+---
+
+<Tag
+  class={className}
+  style={!mobile ? `--nav-item-ch:${navWidth}` : undefined}
+>
+  {
+    links.map((link) => (
+      <a
+        href={link.href}
+        class={`${baseLinkClass} ${
+          link.isActive ? activeLinkClass : inactiveLinkClass
+        }`}
+        aria-current={link.isActive ? "page" : undefined}
+      >
+        {link.label}
+      </a>
+    ))
+  }
+</Tag>
