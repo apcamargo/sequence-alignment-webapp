@@ -35,6 +35,8 @@ export const MATRIX_GROUPS = [
       "PAM120",
       "PAM80",
       "PAM40",
+      "PAM30",
+      "PAM20",
       "PAM10",
       "PAM1",
     ],
