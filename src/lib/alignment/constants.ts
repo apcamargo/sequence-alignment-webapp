@@ -16,7 +16,7 @@ export const DEFAULT_SCORING: ScoringOptions = {
 
 export const MATRIX_GROUPS = [
   {
-    label: "DNA",
+    label: "Nucleotide",
     options: ["EDNAFULL"],
   },
   {
