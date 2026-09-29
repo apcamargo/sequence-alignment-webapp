@@ -303,11 +303,14 @@ export function renderRings(
       (update) =>
         update
           .attr("d", (d) => d.path)
+          // Snap the ink instead of cross-fading it: a ring that lags behind
+          // the cell it surrounds would render a blend of two text colors
+          // mid-move and never match the text within that cell.
+          .attr("fill", (d) => d.color)
           .call((u) =>
             u
               .transition()
               .duration(duration)
-              .attr("fill", (d) => d.color)
               .attr("fill-opacity", (d) => d.opacity),
           ),
       (exit) =>

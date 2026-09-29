@@ -18,6 +18,11 @@ export default function MatrixHeatmapIsland() {
     scoringMatrixPage.activate();
   }, []);
 
+  // Drop stale hover state when the matrix or triangle mode changes.
+  useEffect(() => {
+    setHoveredCell(null);
+  }, [state.matrix, state.showTriangle]);
+
   const labels = useMemo(() => {
     if (!state.matrix) {
       return [] as string[];
@@ -48,6 +53,7 @@ export default function MatrixHeatmapIsland() {
             labels={labels}
             scores={state.matrix.scores}
             showTriangle={state.showTriangle}
+            hoveredCell={hoveredCell}
             onCellHover={setHoveredCell}
           />
         )}

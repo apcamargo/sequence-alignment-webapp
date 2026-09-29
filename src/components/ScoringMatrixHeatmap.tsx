@@ -3,16 +3,18 @@ import { select } from "d3-selection";
 import "d3-transition";
 import {
   createMatrixLayout,
-  DEFAULT_TRANSITION_DURATION,
   selectLayer,
   renderLabels,
   renderGrid,
+  renderRings,
   buildGridLineData,
   buildGridRectData,
   buildRowLabels,
   buildColLabels,
+  buildCellRingPath,
   type RootSelection,
   type BaseCellDatum,
+  type RingDatum,
 } from "../lib/d3/matrix-rendering-core";
 import {
   DIVERGING_BLUE_RED,
@@ -26,7 +28,27 @@ import MatrixViewport from "./MatrixViewport";
 // Smaller cell size for substitution matrices (matrices are big)
 const HEATMAP_CELL_SIZE = 38;
 
+// Fast transitions for the dense matrix — hovers need snappy feedback.
+const HEATMAP_TRANSITION_DURATION = 25;
+
+// Hover highlight: the hovered cell gets an inset ring drawn in that
+// cell's text color, at a stronger opacity than the practice-page rings
+// so it stands out against the dense heatmap. HOVER_RING_DURATION is fast
+// enough to track the pointer but long enough to read as a fade.
+// HOVER_RING_WIDTH is a half-integer: the ring sits on the 0.5 stroke grid,
+// so a x.5 width puts the inner edge on an integer fill boundary in both
+// axes and keeps it crisp at 1x displays.
+const HOVER_RING_WIDTH = 3.5;
+const HOVER_RING_OPACITY = 0.45;
+const HOVER_RING_DURATION = 55;
+const LABEL_BASE_CLASS =
+  "text-sm font-bold fill-viz-label transition-colors duration-150";
+const LABEL_MUTED_CLASS =
+  "text-sm font-bold fill-viz-score-muted transition-colors duration-150";
+
 export interface HoveredCellInfo {
+  i: number;
+  j: number;
   row: string;
   col: string;
   score: number;
@@ -36,6 +58,7 @@ interface ScoringMatrixHeatmapProps {
   labels: string[];
   scores: number[];
   showTriangle?: boolean;
+  hoveredCell?: HoveredCellInfo | null;
   onCellHover?: (info: HoveredCellInfo | null) => void;
 }
 
@@ -48,10 +71,13 @@ interface HeatmapCellDatum extends BaseCellDatum {
   label: string;
 }
 
+type HoveredIndices = { i: number; j: number } | null;
+
 function renderCells(
   root: RootSelection,
   cellData: HeatmapCellDatum[],
   clipId: string,
+  duration: number,
 ): void {
   const layer = selectLayer(root, "cells").attr("clip-path", `url(#${clipId})`);
 
@@ -77,7 +103,7 @@ function renderCells(
           .call((u) =>
             u
               .transition()
-              .duration(DEFAULT_TRANSITION_DURATION)
+              .duration(duration)
               .attr("fill", (d) => d.color)
               .style("opacity", (d) => (d.visible ? 1 : 0)),
           ),
@@ -85,7 +111,11 @@ function renderCells(
     );
 }
 
-function renderScores(root: RootSelection, cellData: HeatmapCellDatum[]): void {
+function renderScores(
+  root: RootSelection,
+  cellData: HeatmapCellDatum[],
+  duration: number,
+): void {
   const layer = selectLayer(root, "scores").style("pointer-events", "none");
   const visibleCells = cellData.filter((d) => d.visible);
 
@@ -106,8 +136,12 @@ function renderScores(root: RootSelection, cellData: HeatmapCellDatum[]): void {
           .text((d) => d.label)
           .call((e) =>
             e
-              .transition()
-              .duration(DEFAULT_TRANSITION_DURATION)
+              // Enter, update, and exit share the "score-fade" name so a new
+              // fade always interrupts the previous one: an update re-targets
+              // opacity to 1 and cancels a pending exit remove instead of
+              // leaving the score stuck invisible mid-fade.
+              .transition("score-fade")
+              .duration(duration)
               .style("opacity", 1),
           ),
       (update) =>
@@ -116,15 +150,16 @@ function renderScores(root: RootSelection, cellData: HeatmapCellDatum[]): void {
           .attr("y", (d) => d.cy)
           .call((u) =>
             u
-              .transition()
-              .duration(DEFAULT_TRANSITION_DURATION)
-              .attr("fill", (d) => d.textColor),
+              .transition("score-fade")
+              .duration(duration)
+              .attr("fill", (d) => d.textColor)
+              .style("opacity", 1),
           ),
       (exit) =>
         exit.call((e) =>
           e
-            .transition()
-            .duration(DEFAULT_TRANSITION_DURATION)
+            .transition("score-fade")
+            .duration(duration)
             .style("opacity", 0)
             .remove(),
         ),
@@ -169,6 +204,8 @@ function renderHitTargets(
     )
     .on("pointerenter", (_, d) => {
       onCellHover({
+        i: d.i,
+        j: d.j,
         row: labels[d.i],
         col: labels[d.j],
         score: d.score,
@@ -179,10 +216,29 @@ function renderHitTargets(
     });
 }
 
+function renderHover(
+  root: RootSelection,
+  ring: RingDatum | null,
+  clipId: string,
+): void {
+  selectLayer(root, "hover").style("pointer-events", "none");
+
+  // Rings are keyed per cell, so each one fades in when shown and fades
+  // out when the pointer moves on, at the hover ring duration.
+  renderRings(
+    root,
+    "hover",
+    ring ? [ring] : [],
+    clipId,
+    HOVER_RING_DURATION,
+  );
+}
+
 export default function ScoringMatrixHeatmap({
   labels,
   scores,
   showTriangle = false,
+  hoveredCell,
   onCellHover,
 }: ScoringMatrixHeatmapProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -239,20 +295,56 @@ export default function ScoringMatrixHeatmap({
     return cells;
   }, [n, scores, colorScale, showTriangle, layout]);
 
+  const hoveredIndices = useMemo<HoveredIndices>(() => {
+    if (!hoveredCell) return null;
+    const { i, j } = hoveredCell;
+    if (i < 0 || j < 0 || i >= n || j >= n) return null;
+    if (showTriangle && j > i) return null;
+    return { i, j };
+  }, [hoveredCell, n, showTriangle]);
+
+  const hoverRing = useMemo<RingDatum | null>(() => {
+    if (!hoveredIndices) return null;
+    const cell = cellData[hoveredIndices.i * n + hoveredIndices.j];
+    if (!cell) return null;
+
+    return {
+      key: `hover-ring-${hoveredIndices.i}-${hoveredIndices.j}`,
+      path: buildCellRingPath(cell, layout, {
+        ringWidth: HOVER_RING_WIDTH,
+        ringInset: 0,
+      }),
+      color: cell.textColor,
+      opacity: HOVER_RING_OPACITY,
+    };
+  }, [hoveredIndices, cellData, layout, n]);
+
   const rowLabels = useMemo(
     () =>
-      buildRowLabels(labels, layout, {
-        className: "text-sm font-bold fill-viz-label",
-      }),
-    [labels, layout],
+      buildRowLabels(labels, layout, { className: LABEL_BASE_CLASS }).map(
+        (datum, index) => ({
+          ...datum,
+          className:
+            hoveredIndices && index !== hoveredIndices.i
+              ? LABEL_MUTED_CLASS
+              : LABEL_BASE_CLASS,
+        }),
+      ),
+    [labels, layout, hoveredIndices],
   );
 
   const colLabels = useMemo(
     () =>
-      buildColLabels(labels, layout, {
-        className: "text-sm font-bold fill-viz-label",
-      }),
-    [labels, layout],
+      buildColLabels(labels, layout, { className: LABEL_BASE_CLASS }).map(
+        (datum, index) => ({
+          ...datum,
+          className:
+            hoveredIndices && index !== hoveredIndices.j
+              ? LABEL_MUTED_CLASS
+              : LABEL_BASE_CLASS,
+        }),
+      ),
+    [labels, layout, hoveredIndices],
   );
 
   const gridRectData = useMemo(() => buildGridRectData(layout), [layout]);
@@ -268,13 +360,18 @@ export default function ScoringMatrixHeatmap({
       .join("g")
       .attr("data-root", "true") as RootSelection;
 
-    renderCells(root, cellData, clipId);
+    renderCells(root, cellData, clipId, HEATMAP_TRANSITION_DURATION);
     renderGrid(root, gridRectData, gridLineData);
-    renderScores(root, cellData);
+    renderScores(root, cellData, HEATMAP_TRANSITION_DURATION);
     renderHitTargets(root, cellData, labels, onCellHover);
-    renderLabels(root, [...rowLabels, ...colLabels]);
+    renderHover(root, hoverRing, clipId);
+    renderLabels(
+      root,
+      [...rowLabels, ...colLabels],
+      HEATMAP_TRANSITION_DURATION,
+    );
 
-    ["cells", "grid", "scores", "hit", "labels"].forEach((layer) => {
+    ["cells", "hover", "grid", "scores", "hit", "labels"].forEach((layer) => {
       root.select(`g[data-layer='${layer}']`).raise();
     });
   }, [
@@ -283,6 +380,8 @@ export default function ScoringMatrixHeatmap({
     colLabels,
     gridLineData,
     gridRectData,
+    hoveredIndices,
+    hoverRing,
     labels,
     onCellHover,
     rowLabels,
