@@ -5,10 +5,10 @@
   "version": "0.0.1",
   "scripts": {
     "build:wasm": "./plugin/build-wasm.sh",
-    "dev": "bun run build:wasm && astro dev",
-    "build": "bun run build:wasm && astro build",
+    "dev": "npm run build:wasm && astro dev",
+    "build": "npm run build:wasm && astro build",
     "preview": "astro preview",
-    "check": "bun x tsc --noEmit",
+    "check": "tsc --noEmit",
     "plugin:test": "cargo test --manifest-path ./plugin/Cargo.toml",
     "astro": "astro"
   },
